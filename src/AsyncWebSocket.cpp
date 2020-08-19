@@ -473,6 +473,7 @@ AsyncWebSocketClient::AsyncWebSocketClient(AsyncWebServerRequest *request, Async
   _clientId = _server->_getNextId();
   _status = WS_CONNECTED;
   _pstate = 0;
+  _pinfo.num = 0;
   _partialHeader = nullptr;
   _partialHeaderLen = 0;
   _lastMessageTime = millis();
