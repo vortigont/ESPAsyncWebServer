@@ -1221,11 +1221,17 @@ void AsyncWebSocket::_cleanBuffers()
 {
   AsyncWebLockGuard l(_lock);
 
-  for(AsyncWebSocketMessageBuffer * c: _buffers){
-    if(c && c->canDelete()){
-        _buffers.remove(c);
+  bool reiterate;
+  do {
+    reiterate = false;
+    for(AsyncWebSocketMessageBuffer * c: _buffers){
+      if(c && c->canDelete()){
+          _buffers.remove(c);
+          reiterate = false;
+          break;                  // iterator must be invalidated on list change
+      }
     }
-  }
+  } while(reiterate);
 }
 
 AsyncWebSocket::AsyncWebSocketClientLinkedList AsyncWebSocket::getClients() const {
