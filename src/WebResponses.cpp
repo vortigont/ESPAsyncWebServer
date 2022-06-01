@@ -22,6 +22,10 @@
 #include "WebResponseImpl.h"
 #include "cbuf.h"
 
+#ifndef ASYNC_RESPONSE_HDR_BUFF_SIZE
+#define ASYNC_RESPONSE_HDR_BUFF_SIZE 300
+#endif
+
 // Since ESP8266 does not link memchr by default, here's its implementation.
 void* memchr(void* ptr, int ch, size_t count)
 {
@@ -130,7 +134,7 @@ String AsyncWebServerResponse::_assembleHead(uint8_t version){
       addHeader("Transfer-Encoding","chunked");
   }
   String out = String();
-  int bufSize = 300;
+  int bufSize = ASYNC_RESPONSE_HDR_BUFF_SIZE;
   char buf[bufSize];
 
   snprintf(buf, bufSize, "HTTP/1.%d %d %s\r\n", version, _code, _responseCodeToString(_code));
