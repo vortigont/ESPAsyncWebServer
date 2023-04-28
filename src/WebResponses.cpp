@@ -504,7 +504,7 @@ void AsyncFileResponse::_setContentType(const String& path){
   else if (path.endsWith(".xml")) _contentType = "text/xml";
   else if (path.endsWith(".pdf")) _contentType = "application/pdf";
   else if (path.endsWith(".zip")) _contentType = "application/zip";
-  else if(path.endsWith(c_gz)) _contentType = "application/x-gzip";
+  else if(path.endsWith(".gz")) _contentType = "application/x-gzip";
   else _contentType = "text/plain";
 }
 
@@ -512,10 +512,9 @@ AsyncFileResponse::AsyncFileResponse(FS &fs, const String& path, const String& c
   _code = 200;
   _path = path;
 
-  if(!download && !fs.exists(_path) && (fs.exists(_path + c_gz) || fs.exists(_path + c_br))){
-    bool gz = fs.exists(_path + c_gz);
-    _path += gz ? c_gz : c_br;
-    addHeader(c_cencoding, gz ? c_gzip : c_brotli);
+  if(!download && !fs.exists(_path) && fs.exists(_path+".gz")){
+    _path = _path+".gz";
+    addHeader("Content-Encoding", "gzip");
     _callback = nullptr; // Unable to process zipped templates
     _sendContentLength = true;
     _chunked = false;
@@ -524,7 +523,7 @@ AsyncFileResponse::AsyncFileResponse(FS &fs, const String& path, const String& c
   _content = fs.open(_path, "r");
   _contentLength = _content.size();
 
-  if(contentType.isEmpty())
+  if(contentType == "")
     _setContentType(path);
   else
     _contentType = contentType;
@@ -540,30 +539,24 @@ AsyncFileResponse::AsyncFileResponse(FS &fs, const String& path, const String& c
     // set filename and force rendering
     snprintf(buf, sizeof (buf), "inline; filename=\"%s\"", filename);
   }
-  addHeader(c_cdisposition, buf);
+  addHeader("Content-Disposition", buf);
 }
 
 AsyncFileResponse::AsyncFileResponse(File content, const String& path, const String& contentType, bool download, AwsTemplateProcessor callback): AsyncAbstractResponse(callback){
   _code = 200;
   _path = path;
 
-  if(!download){
-    bool gz, br;
-    br = String(content.name()).endsWith(c_br) && !path.endsWith(c_br);
-    if (!br){gz = String(content.name()).endsWith(c_gz) && !path.endsWith(c_gz);};
-
-    if(br || gz){
-      addHeader(c_cencoding, br ? c_brotli : c_gzip);
-      _callback = nullptr; // Unable to process gzipped templates
-      _sendContentLength = true;
-      _chunked = false;
-    }
+  if(!download && String(content.name()).endsWith(".gz") && !path.endsWith(".gz")){
+    addHeader("Content-Encoding", "gzip");
+    _callback = nullptr; // Unable to process gzipped templates
+    _sendContentLength = true;
+    _chunked = false;
   }
 
   _content = content;
   _contentLength = _content.size();
 
-  if(contentType.isEmpty())
+  if(contentType == "")
     _setContentType(path);
   else
     _contentType = contentType;
@@ -577,7 +570,7 @@ AsyncFileResponse::AsyncFileResponse(File content, const String& path, const Str
   } else {
     snprintf(buf, sizeof (buf), "inline; filename=\"%s\"", filename);
   }
-  addHeader(c_cdisposition, buf);
+  addHeader("Content-Disposition", buf);
 }
 
 size_t AsyncFileResponse::_fillBuffer(uint8_t *data, size_t len){
