@@ -197,7 +197,7 @@ void AsyncStaticWebHandler::handleRequest(AsyncWebServerRequest *request)
   if (request->_tempFile == true) {
     time_t lw = request->_tempFile.getLastWrite();    // get last file mod time (if supported by FS)
     if (lw) {
-      char datetime[std::size("Fri, 27 Jan 2023 15:50:27 GMT")];
+      char datetime[sizeof("Fri, 27 Jan 2023 15:50:27 GMT")];
       std::strftime(std::data(datetime), std::size(datetime), "%a, %d %b %Y %H:%M:%S GMT", std::gmtime(&lw));
       _last_modified = datetime;
     }
