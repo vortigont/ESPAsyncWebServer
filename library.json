@@ -18,16 +18,9 @@
   "platforms": ["espressif8266", "espressif32"],
   "dependencies": [
     {
-      "owner": "me-no-dev",
-      "name": "ESPAsyncTCP",
-      "version": "^1.2.2",
-      "platforms": "espressif8266"
-    },
-    {
-      "owner": "me-no-dev",      
-      "name": "AsyncTCP",
-      "version": "^1.1.1",
-      "platforms": "espressif32"
+     "owner": "yubox-node-org",
+     "name": "AsyncTCPSock",
+     "version": "https://github.com/yubox-node-org/AsyncTCPSock"
     },
     {
       "name": "Hash",
