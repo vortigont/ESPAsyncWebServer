@@ -124,6 +124,48 @@ size_t webSocketSendFrame(AsyncClient *client, bool final, uint8_t opcode, bool 
 
 
 /*
+ *    AsyncWebSocketMessageBuffer
+ */
+
+AsyncWebSocketMessageBuffer::AsyncWebSocketMessageBuffer()
+    : _buffer(std::make_shared<std::vector<uint8_t>>(0)) 
+{
+}
+
+AsyncWebSocketMessageBuffer::AsyncWebSocketMessageBuffer(uint8_t* data, size_t size)
+    : _buffer(std::make_shared<std::vector<uint8_t>>(size)) 
+{
+    if (_buffer->capacity() < size) {
+        _buffer.reset();
+        _buffer = std::make_shared<std::vector<uint8_t>>(0);
+    } else {
+        std::memcpy(_buffer->data(), data, size);
+    }
+}
+
+AsyncWebSocketMessageBuffer::AsyncWebSocketMessageBuffer(size_t size)
+    : _buffer(std::make_shared<std::vector<uint8_t>>(size)) 
+{
+    if (_buffer->capacity() < size) {
+        _buffer.reset();
+        _buffer = std::make_shared<std::vector<uint8_t>>(0);
+    }
+}
+
+AsyncWebSocketMessageBuffer::~AsyncWebSocketMessageBuffer() 
+{
+    _buffer.reset();
+}
+
+bool AsyncWebSocketMessageBuffer::reserve(size_t size) 
+{
+    if (_buffer->capacity() >= size)
+        return true;
+    _buffer->reserve(size);
+    return _buffer->capacity() >= size;
+}
+
+/*
  * Control Frame
  */
 
@@ -410,6 +452,9 @@ void AsyncWebSocketClient::_queueMessage(std::shared_ptr<std::vector<uint8_t>> b
     if (!_client)
         return;
 
+    if (buffer->size() == 0)
+        return;
+
     {
         AsyncWebLockGuard l(_lock);
         if (_messageQueue.size() >= WS_MAX_QUEUED_MESSAGES)
@@ -643,11 +688,46 @@ size_t AsyncWebSocketClient::printf_P(PGM_P formatP, ...)
 }
 #endif
 
-AsyncWebSocketMessageBuffer AsyncWebSocketClient::makeBuffer(const uint8_t *message, size_t len)
+namespace {
+std::shared_ptr<std::vector<uint8_t>> makeSharedBuffer(const uint8_t *message, size_t len)
 {
     auto buffer = std::make_shared<std::vector<uint8_t>>(len);
     std::memcpy(buffer->data(), message, len);
     return buffer;
+}
+}
+
+void AsyncWebSocketClient::text(AsyncWebSocketMessageBuffer * buffer)
+{
+    if (buffer) {
+        text(std::move(buffer->_buffer));
+        delete buffer;
+    }
+}
+
+void AsyncWebSocketClient::text(std::shared_ptr<std::vector<uint8_t>> buffer)
+{
+    _queueMessage(buffer);
+}
+
+void AsyncWebSocketClient::text(const uint8_t *message, size_t len)
+{
+    text(makeSharedBuffer(message, len));
+}
+
+void AsyncWebSocketClient::text(const char *message, size_t len)
+{
+    text((const uint8_t *)message, len);
+}
+
+void AsyncWebSocketClient::text(const char *message)
+{
+    text(message, strlen(message));
+}
+
+void AsyncWebSocketClient::text(const String &message)
+{
+    text(message.c_str(), message.length());
 }
 
 void AsyncWebSocketClient::text(const __FlashStringHelper *data)
@@ -669,6 +749,39 @@ void AsyncWebSocketClient::text(const __FlashStringHelper *data)
         text(message, n);
         free(message);
     }
+}
+
+void AsyncWebSocketClient::binary(AsyncWebSocketMessageBuffer * buffer)
+{
+    if (buffer) {
+        binary(std::move(buffer->_buffer));
+        delete buffer;
+    }
+}
+
+void AsyncWebSocketClient::binary(std::shared_ptr<std::vector<uint8_t>> buffer)
+{
+    _queueMessage(buffer, WS_BINARY);
+}
+
+void AsyncWebSocketClient::binary(const uint8_t *message, size_t len)
+{
+    binary(makeSharedBuffer(message, len));
+}
+
+void AsyncWebSocketClient::binary(const char *message, size_t len)
+{
+    binary((const uint8_t *)message, len);
+}
+
+void AsyncWebSocketClient::binary(const char *message)
+{
+    binary(message, strlen(message));
+}
+
+void AsyncWebSocketClient::binary(const String &message)
+{
+    binary(message.c_str(), message.length());
 }
 
 void AsyncWebSocketClient::binary(const __FlashStringHelper *data, size_t len)
@@ -805,7 +918,7 @@ void AsyncWebSocket::text(uint32_t id, AsyncWebSocketMessageBuffer message){
 void AsyncWebSocket::text(uint32_t id, const uint8_t *message, size_t len)
 {
     if (AsyncWebSocketClient * c = client(id))
-        c->text(makeBuffer(message, len));
+        c->text(makeSharedBuffer(message, len));
 }
 void AsyncWebSocket::text(uint32_t id, const __FlashStringHelper *data)
 {
@@ -829,7 +942,15 @@ void AsyncWebSocket::text(uint32_t id, const __FlashStringHelper *data)
     }
 }
 
-void AsyncWebSocket::textAll(AsyncWebSocketMessageBuffer buffer)
+void AsyncWebSocket::textAll(AsyncWebSocketMessageBuffer * buffer)
+{
+    if (buffer) {
+        textAll(std::move(buffer->_buffer));
+        delete buffer;  
+    }
+}
+
+void AsyncWebSocket::textAll(std::shared_ptr<std::vector<uint8_t>> buffer)
 {
     for (auto &c : _clients)
         if (c.status() == WS_CONNECTED)
@@ -837,7 +958,7 @@ void AsyncWebSocket::textAll(AsyncWebSocketMessageBuffer buffer)
 }
 void AsyncWebSocket::textAll(const uint8_t *message, size_t len)
 {
-    textAll(makeBuffer(message, len));
+    textAll(makeSharedBuffer(message, len));
 }
 void AsyncWebSocket::textAll(const char * message, size_t len)
 {
@@ -879,7 +1000,7 @@ void AsyncWebSocket::binary(uint32_t id, AsyncWebSocketMessageBuffer message){
 void AsyncWebSocket::binary(uint32_t id, const uint8_t *message, size_t len)
 {
     if (AsyncWebSocketClient *c = client(id))
-        c->binary(makeBuffer(message, len));
+        c->binary(makeSharedBuffer(message, len));
 }
 void AsyncWebSocket::binary(uint32_t id, const char * message, size_t len)
 {
@@ -905,7 +1026,15 @@ void AsyncWebSocket::binary(uint32_t id, const __FlashStringHelper *data, size_t
     }
 }
 
-void AsyncWebSocket::binaryAll(AsyncWebSocketMessageBuffer buffer)
+void AsyncWebSocket::binaryAll(AsyncWebSocketMessageBuffer * buffer)
+{
+    if (buffer) {
+        binaryAll(std::move(buffer->_buffer));
+        delete buffer;
+    }
+}
+
+void AsyncWebSocket::binaryAll(std::shared_ptr<std::vector<uint8_t>> buffer)
 {
     for (auto &c : _clients)
         if (c.status() == WS_CONNECTED)
@@ -914,7 +1043,7 @@ void AsyncWebSocket::binaryAll(AsyncWebSocketMessageBuffer buffer)
 
 void AsyncWebSocket::binaryAll(const uint8_t *message, size_t len)
 {
-    binaryAll(makeBuffer(message, len));
+    binaryAll(makeSharedBuffer(message, len));
 }
 
 void AsyncWebSocket::binaryAll(const char *message, size_t len)
@@ -1085,11 +1214,28 @@ void AsyncWebSocket::handleRequest(AsyncWebServerRequest *request)
     request->send(response);
 }
 
-AsyncWebSocketMessageBuffer AsyncWebSocket::makeBuffer(const uint8_t *message, size_t len)
+AsyncWebSocketMessageBuffer * AsyncWebSocket::makeBuffer(size_t size)
 {
-    auto buffer = std::make_shared<std::vector<uint8_t>>(len);
-    std::memcpy(buffer->data(), message, len);
-    return buffer;
+    AsyncWebSocketMessageBuffer * buffer = new AsyncWebSocketMessageBuffer(size);
+    if (buffer->length() != size)
+    {
+        delete buffer;
+        return nullptr;
+    } else {
+        return buffer;
+    }
+}
+
+AsyncWebSocketMessageBuffer * AsyncWebSocket::makeBuffer(uint8_t * data, size_t size)
+{
+    AsyncWebSocketMessageBuffer * buffer = new AsyncWebSocketMessageBuffer(data, size);
+    if (buffer->length() != size)
+    {
+        delete buffer;
+        return nullptr;
+    } else {
+        return buffer;
+    }
 }
 
 /*

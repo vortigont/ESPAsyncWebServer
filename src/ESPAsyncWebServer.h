@@ -40,13 +40,17 @@
 #error Platform not supported
 #endif
 
+#define ASYNCWEBSERVER_VERSION "2.5.1"
+#define ASYNCWEBSERVER_VERSION_MAJOR 2
+#define ASYNCWEBSERVER_VERSION_MINOR 5
+#define ASYNCWEBSERVER_VERSION_REVISION 1
+#define ASYNCWEBSERVER_FORK_mathieucarbou
+
 #ifdef ASYNCWEBSERVER_REGEX
 #define ASYNCWEBSERVER_REGEX_ATTRIBUTE
 #else
 #define ASYNCWEBSERVER_REGEX_ATTRIBUTE __attribute__((warning("ASYNCWEBSERVER_REGEX not defined")))
 #endif
-
-#define DEBUGF(...) //Serial.printf(__VA_ARGS__)
 
 class AsyncWebServer;
 class AsyncWebServerRequest;

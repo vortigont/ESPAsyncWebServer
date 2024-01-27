@@ -100,7 +100,6 @@ bool AsyncStaticWebHandler::canHandle(AsyncWebServerRequest *request){
     if(_cache_control.length())
       request->addInterestingHeader(F("If-None-Match"));
 
-    DEBUGF("[AsyncStaticWebHandler::canHandle] TRUE\n");
     return true;
   }
 
