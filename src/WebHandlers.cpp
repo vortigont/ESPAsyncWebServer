@@ -208,12 +208,8 @@ void AsyncStaticWebHandler::handleRequest(AsyncWebServerRequest *request)
 
   if (request->_tempFile == true) {
     time_t lw = request->_tempFile.getLastWrite();    // get last file mod time (if supported by FS)
-    if (lw) {
-      char datetime[std::size("Fri, 27 Jan 2023 15:50:27 GMT")];
-      std::strftime(std::data(datetime), std::size(datetime), "%a, %d %b %Y %H:%M:%S GMT", std::gmtime(&lw));
-      _last_modified = datetime;
-    }
-    String etag(request->_tempFile.size());
+    if (lw) setLastModified(std::gmtime(&lw));
+    String etag(lw ? lw : request->_tempFile.size());   // set etag to lastmod timestamp if available, otherwise to size
     if (_last_modified.length() && _last_modified == request->header("If-Modified-Since")) {
       request->_tempFile.close();
       request->send(304); // Not modified
