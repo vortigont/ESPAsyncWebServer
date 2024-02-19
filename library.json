@@ -18,13 +18,10 @@
   "platforms": ["espressif8266", "espressif32"],
   "dependencies": [
     {
-     "owner": "yubox-node-org",
-     "name": "AsyncTCPSock",
-     "version": "https://github.com/yubox-node-org/AsyncTCPSock"
-    },
-    {
-      "name": "Hash",
-      "platforms": "espressif8266"
+      "owner": "esphome",
+      "name": "AsyncTCP-esphome",
+      "version": "^2.1.1",
+      "platforms": "espressif32"
     }
   ]
 }
