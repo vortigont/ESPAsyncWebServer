@@ -45,10 +45,10 @@
 
 #include "literals.h"
 
-#define ASYNCWEBSERVER_VERSION          "3.0.3"
+#define ASYNCWEBSERVER_VERSION          "3.0.6"
 #define ASYNCWEBSERVER_VERSION_MAJOR    3
 #define ASYNCWEBSERVER_VERSION_MINOR    0
-#define ASYNCWEBSERVER_VERSION_REVISION 3
+#define ASYNCWEBSERVER_VERSION_REVISION 6
 #define ASYNCWEBSERVER_FORK_mathieucarbou
 
 #ifdef ASYNCWEBSERVER_REGEX
@@ -386,6 +386,7 @@ class AsyncWebServerRequest {
     const String& arg(size_t i) const;     // get request argument value by number
     const String& argName(size_t i) const; // get request argument name by number
     bool hasArg(const char* name) const;   // check if argument exists
+    bool hasArg(const String& name) const { return hasArg(name.c_str()); };
 #ifdef ESP8266
     bool hasArg(const __FlashStringHelper* data) const; // check if F(argument) exists
 #endif
