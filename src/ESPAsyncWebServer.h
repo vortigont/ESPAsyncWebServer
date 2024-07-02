@@ -43,6 +43,8 @@
   #error Platform not supported
 #endif
 
+#include "literals.h"
+
 #define ASYNCWEBSERVER_VERSION          "3.0.6"
 #define ASYNCWEBSERVER_VERSION_MAJOR    3
 #define ASYNCWEBSERVER_VERSION_MINOR    0
